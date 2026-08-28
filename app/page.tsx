@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Icon, type IconName } from './icons';
 
 type Tag = { slug: string; name: string; icon: string; count?: number };
 type MediaItem = {
@@ -30,12 +31,17 @@ type LyricLine = { time: number; text: string };
 
 const PAGE_SIZE = 30;
 const FAVORITES_KEY = 'kids-planet-favorites-v1';
-const playModes: { value: Exclude<PlayMode, 'single'>; label: string; short: string; icon: string }[] = [
-  { value: 'order', label: '按顺序播完后停止', short: '顺序播放', icon: '⇥' },
-  { value: 'shuffle', label: '随机播放一轮', short: '随机播放', icon: '⤨' },
-  { value: 'repeatShuffle', label: '每轮重新随机并持续播放', short: '重复随机', icon: '⟳' },
-  { value: 'repeatAll', label: '按列表顺序循环播放', short: '列表循环', icon: '↻' },
+const playModes: { value: Exclude<PlayMode, 'single'>; label: string; short: string; icon: IconName }[] = [
+  { value: 'order', label: '按顺序播完后停止', short: '顺序播放', icon: 'order' },
+  { value: 'shuffle', label: '随机播放一轮', short: '随机播放', icon: 'shuffle' },
+  { value: 'repeatShuffle', label: '每轮重新随机并持续播放', short: '重复随机', icon: 'repeatShuffle' },
+  { value: 'repeatAll', label: '按列表顺序循环播放', short: '列表循环', icon: 'repeatAll' },
 ];
+const tagIcons: Record<string, IconName> = {
+  animals: 'animals', numbers: 'numbers', colors: 'colors', holidays: 'holidays',
+  vehicles: 'vehicles', bedtime: 'bedtime', alphabet: 'alphabet', movement: 'movement',
+  routines: 'routines', food: 'food', nature: 'nature', friends: 'friends',
+};
 const coverTones = ['sun', 'night', 'mint', 'coral', 'sky', 'grape'];
 
 export default function Home() {
@@ -348,17 +354,17 @@ export default function Home() {
     <main className={`app-shell ${lyricsOpen ? 'lyrics-expanded' : ''}`}>
       <header className="topbar">
         <button className="brand" type="button" onClick={() => { setFilter('all'); setQuery(''); }} aria-label="返回全部儿歌">
-          <span className="brand-mark" aria-hidden="true">🌟</span><span>童声星球</span>
+          <span className="brand-mark"><Icon name="star" /></span><span>童声星球</span>
         </button>
-        <label className="search-box"><span aria-hidden="true">⌕</span><span className="sr-only">搜索儿歌</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索中文名、英文名或编号" /></label>
-        <button className={`favorite-orb ${filter === 'favorites' ? 'active' : ''}`} type="button" aria-label="查看收藏" onClick={() => setFilter('favorites')}>★</button>
+        <label className="search-box"><Icon name="search" /><span className="sr-only">搜索儿歌</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索中文名、英文名或编号" /></label>
+        <button className={`favorite-orb ${filter === 'favorites' ? 'active' : ''}`} type="button" aria-label="查看收藏" onClick={() => setFilter('favorites')}><Icon name="favorites" /></button>
       </header>
 
       <div className="workspace">
         <nav className="category-panel" aria-label="儿歌主题">
-          <FilterButton active={filter === 'all'} icon="▦" label="全部" count={filter === 'all' ? total : undefined} onClick={() => setFilter('all')} />
-          <FilterButton active={filter === 'favorites'} icon="★" label="收藏" count={favoriteIds.length} onClick={() => setFilter('favorites')} />
-          {tags.map((tag) => <FilterButton key={tag.slug} active={filter === tag.slug} icon={tag.icon} label={tag.name} count={tag.count} onClick={() => setFilter(tag.slug)} />)}
+          <FilterButton active={filter === 'all'} icon="grid" label="全部" count={filter === 'all' ? total : undefined} onClick={() => setFilter('all')} />
+          <FilterButton active={filter === 'favorites'} icon="favorites" label="收藏" count={favoriteIds.length} onClick={() => setFilter('favorites')} />
+          {tags.map((tag) => <FilterButton key={tag.slug} active={filter === tag.slug} icon={tagIcons[tag.slug] ?? 'music'} label={tag.name} count={tag.count} onClick={() => setFilter(tag.slug)} />)}
         </nav>
 
         <section className="library" aria-label="儿歌列表" ref={libraryRef}>
@@ -376,13 +382,13 @@ export default function Home() {
                 return (
                   <article className={`song-card ${active?.id === item.id ? 'selected' : ''} ${active?.id === item.id && playing ? 'is-playing' : ''}`} key={item.id}>
                     <button className={`cover cover-${coverToneFor(item.title)}`} type="button" aria-label={`播放 ${item.titleZh || item.title}`} onClick={() => selectTrack(item, true, item.hasAudio ? 'audio' : 'video')}>
-                      {item.posterUrl ? <img src={item.posterUrl} alt="" loading="lazy" decoding="async" /> : <span aria-hidden="true">{coverIconFor(item.title)}</span>}
+                      {item.posterUrl ? <img src={item.posterUrl} alt="" loading="lazy" decoding="async" /> : <span className="cover-placeholder"><Icon name="music" size={52} /></span>}
                       <small>{item.sourceCode}</small>
                       <em>{formatTime((item.audioDurationMs ?? item.videoDurationMs ?? 0) / 1000)}</em>
                       {active?.id === item.id && playing && <b className="playing-bars" aria-label="正在播放"><i /><i /><i /></b>}
                     </button>
-                    <button className={`card-favorite ${favorite ? 'active' : ''}`} type="button" aria-label={favorite ? '取消收藏' : '加入收藏'} onClick={() => toggleFavorite(item.id)}>★</button>
-                    {item.hasVideo && <button className="watch-action" type="button" onClick={() => selectTrack(item, true, 'video')}><span>▶</span>看动画</button>}
+                    <button className={`card-favorite ${favorite ? 'active' : ''}`} type="button" aria-label={favorite ? '取消收藏' : '加入收藏'} onClick={() => toggleFavorite(item.id)}><Icon name="favorites" size={18} /></button>
+                    {item.hasVideo && <button className="watch-action" type="button" onClick={() => selectTrack(item, true, 'video')}><Icon name="play" size={12} />看动画</button>}
                     <button className="card-copy" type="button" onClick={() => selectTrack(item, true, item.hasAudio ? 'audio' : 'video')} title={`${item.titleZh}\n${item.title}`}>
                       <strong>{item.titleZh || '快乐英文儿歌'}</strong><span>{item.title}</span>
                     </button>
@@ -392,7 +398,7 @@ export default function Home() {
             </div>
           )}
 
-          {!loading && !error && library.length === 0 && <div className="empty-state"><span aria-hidden="true">☁</span><h2>{filter === 'favorites' ? '还没有收藏儿歌' : '没有找到这首歌'}</h2><p>{filter === 'favorites' ? '点卡片右上角的小星星，就能放进这里。' : '试试中文名、英文名或三位编号。'}</p></div>}
+          {!loading && !error && library.length === 0 && <div className="empty-state"><Icon name={filter === 'favorites' ? 'favorites' : 'search'} size={60} /><h2>{filter === 'favorites' ? '还没有收藏儿歌' : '没有找到这首歌'}</h2><p>{filter === 'favorites' ? '点卡片右上角的小爱心，就能放进这里。' : '试试中文名、英文名或三位编号。'}</p></div>}
           <div className="load-sentinel" ref={loadSentinelRef}>{loadingMore ? <><span className="spinner" />正在搬来更多儿歌…</> : hasMore ? '继续向下滑，还有更多' : library.length > 0 ? '已经看到这一组的全部儿歌啦' : ''}</div>
         </section>
       </div>
@@ -401,7 +407,7 @@ export default function Home() {
         <section className={`player-dock ${lyricsOpen ? 'with-lyrics' : ''}`} aria-label="当前播放器">
           {lyricsOpen && <div className="lyrics-panel">
             <button className="drawer-handle" type="button" onClick={() => setLyricsOpen(false)} aria-label="收起歌词"><span /></button>
-            <div className="lyrics-title"><span>♫ 跟着一起唱</span><button type="button" onClick={() => setLyricsOpen(false)}>收起歌词⌄</button></div>
+            <div className="lyrics-title"><span><Icon name="lyrics" size={17} />跟着一起唱</span><button type="button" onClick={() => setLyricsOpen(false)}>收起歌词<Icon name="chevronDown" size={15} /></button></div>
             <div className="lyrics-scroll">
               {lyricsStatus === 'loading' && <p className="lyric-message">歌词正在打开…</p>}
               {lyricsStatus === 'error' && <p className="lyric-message">这首歌词暂时没有准备好</p>}
@@ -412,37 +418,37 @@ export default function Home() {
 
           <div className="player-main">
             <div className="track-info">
-              <div className="mini-cover">{active?.posterUrl ? <img src={active.posterUrl} alt="" /> : <span aria-hidden="true">♫</span>}</div>
+              <div className="mini-cover">{active?.posterUrl ? <img src={active.posterUrl} alt="" /> : <Icon name="music" size={32} />}</div>
               <div className="track-summary"><span className="now-label">{active ? playing ? '正在播放' : '已选中' : '欢迎来到童声星球'}</span><strong>{active?.titleZh ?? '选一首儿歌开始'}</strong><span>{active?.title ?? '听儿歌、看动画、跟唱歌词'}</span></div>
             </div>
 
             <div className="transport">
-              <button type="button" aria-label="后退十秒" disabled={!active} onClick={() => seekBy(-10)}>↶<small>10</small></button>
-              <button type="button" aria-label="上一首" disabled={!active} onClick={goPrevious}>|◀</button>
-              <button className="primary-play" type="button" aria-label={playing ? '暂停' : '播放'} disabled={!active} onClick={togglePlayback}>{playing ? 'Ⅱ' : '▶'}</button>
-              <button type="button" aria-label="下一首" disabled={!active} onClick={() => void goNext(false)}>▶|</button>
-              <button type="button" aria-label="前进十秒" disabled={!active} onClick={() => seekBy(10)}>↷<small>10</small></button>
+              <button type="button" aria-label="后退十秒" disabled={!active} onClick={() => seekBy(-10)}><Icon name="seekBack10" /></button>
+              <button type="button" aria-label="上一首" disabled={!active} onClick={goPrevious}><Icon name="previous" /></button>
+              <button className="primary-play" type="button" aria-label={playing ? '暂停' : '播放'} disabled={!active} onClick={togglePlayback}><Icon name={playing ? 'pause' : 'play'} size={27} /></button>
+              <button type="button" aria-label="下一首" disabled={!active} onClick={() => void goNext(false)}><Icon name="next" /></button>
+              <button type="button" aria-label="前进十秒" disabled={!active} onClick={() => seekBy(10)}><Icon name="seekForward10" /></button>
             </div>
 
             <div className="player-actions">
-              <button className={kind === 'audio' && !videoOpen ? 'active' : ''} disabled={!active?.hasAudio} onClick={() => switchKind('audio')} type="button">♫<span>听</span></button>
-              <button className={kind === 'video' && videoOpen ? 'active video' : ''} disabled={!active?.hasVideo} onClick={() => switchKind('video')} type="button">▶<span>看</span></button>
-              <button className={lyricsOpen ? 'active lyrics' : ''} disabled={!active?.hasLyrics} onClick={() => { if (videoOpen) closeVideo(); setLyricsOpen((open) => !open); }} type="button">▤<span>歌词</span></button>
-              <button className={mode === 'single' ? 'active repeat-one' : ''} disabled={!active} onClick={toggleSingleRepeat} type="button" aria-pressed={mode === 'single'} title="单曲循环">↻<sup>1</sup><span>单曲</span></button>
+              <button className={kind === 'audio' && !videoOpen ? 'active' : ''} disabled={!active?.hasAudio} onClick={() => switchKind('audio')} type="button"><Icon name="music" /><span>听</span></button>
+              <button className={kind === 'video' && videoOpen ? 'active video' : ''} disabled={!active?.hasVideo} onClick={() => switchKind('video')} type="button"><Icon name="video" /><span>看</span></button>
+              <button className={lyricsOpen ? 'active lyrics' : ''} disabled={!active?.hasLyrics} onClick={() => { if (videoOpen) closeVideo(); setLyricsOpen((open) => !open); }} type="button"><Icon name="lyrics" /><span>歌词</span></button>
+              <button className={mode === 'single' ? 'active repeat-one' : ''} disabled={!active} onClick={toggleSingleRepeat} type="button" aria-pressed={mode === 'single'} title="单曲循环"><Icon name="repeatOne" /><span>单曲</span></button>
               <ModePicker mode={selectedMode} onChange={setListMode} />
             </div>
 
             <div className="progress-area"><span>{formatTime(currentTime)}</span><input aria-label="播放进度" type="range" min="0" max={Math.max(duration, 0)} step="0.1" disabled={!active} value={Math.min(currentTime, duration || 0)} onChange={(event) => { const value = Number(event.target.value); if (mediaRef.current) mediaRef.current.currentTime = value; setCurrentTime(value); }} style={{ '--progress': `${duration > 0 ? (currentTime / duration) * 100 : 0}%` } as React.CSSProperties} /><span>{formatTime(duration || (active?.audioDurationMs ?? active?.videoDurationMs ?? 0) / 1000)}</span></div>
-            <label className="volume-control"><span>🔊</span><input aria-label="音量" type="range" min="0" max="1" step="0.05" value={volume} onChange={(event) => { const value = Number(event.target.value); setVolume(value); if (mediaRef.current) mediaRef.current.volume = value; }} /></label>
+            <label className="volume-control"><Icon name="volume" /><input aria-label="音量" type="range" min="0" max="1" step="0.05" value={volume} onChange={(event) => { const value = Number(event.target.value); setVolume(value); if (mediaRef.current) mediaRef.current.volume = value; }} /></label>
           </div>
         </section>
       </div>
 
       {videoOpen && kind === 'video' && active?.videoUrl && <div className="video-overlay" role="presentation" onClick={closeVideo}>
         <section className="video-player" role="dialog" aria-modal="true" aria-label={`${active.titleZh} 视频`} onClick={(event) => event.stopPropagation()}>
-          <button className="back-to-library" type="button" onClick={closeVideo}>← 返回儿歌架</button>
+          <button className="back-to-library" type="button" onClick={closeVideo}><Icon name="back" />返回儿歌架</button>
           <video key={`video-${active.id}`} ref={(node) => { videoRef.current = node; mediaRef.current = node; if (node) node.volume = volume; }} src={active.videoUrl} poster={active.posterUrl} preload="metadata" playsInline controls onLoadedMetadata={(event) => void handleMediaReady(event.currentTarget)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onDurationChange={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)} onEnded={handleEnded} />
-          {!playing && videoCountdown === null && <button className="video-big-play" type="button" onClick={togglePlayback} aria-label="播放视频">▶</button>}
+          {!playing && videoCountdown === null && <button className="video-big-play" type="button" onClick={togglePlayback} aria-label="播放视频"><Icon name="play" size={38} /></button>}
           {videoCountdown !== null && <div className="next-video-countdown"><strong>{videoCountdown} 秒后播放下一首</strong><button type="button" onClick={() => setVideoCountdown(null)}>留在这里</button></div>}
         </section>
       </div>}
@@ -462,13 +468,13 @@ function ModePicker({ mode, onChange }: { mode: Exclude<PlayMode, 'single'>; onC
     return () => { document.removeEventListener('pointerdown', closeOutside); document.removeEventListener('keydown', closeEscape); };
   }, [open]);
   return <div className="mode-picker" ref={pickerRef}>
-    <button className="mode-button" type="button" aria-haspopup="listbox" aria-expanded={open} title={selected.label} onClick={() => setOpen((value) => !value)}><span>{selected.icon}</span><b>{selected.short}</b><i>⌃</i></button>
-    {open && <div className="mode-menu" role="listbox">{playModes.map((item) => <button className={item.value === mode ? 'active' : ''} type="button" role="option" aria-selected={item.value === mode} key={item.value} onClick={() => { onChange(item.value); setOpen(false); }}><span>{item.icon}</span><span><strong>{item.short}</strong><small>{item.label}</small></span>{item.value === mode && <b>✓</b>}</button>)}</div>}
+    <button className="mode-button" type="button" aria-haspopup="listbox" aria-expanded={open} title={selected.label} onClick={() => setOpen((value) => !value)}><Icon name={selected.icon} /><b>{selected.short}</b><Icon name="chevronUp" size={14} /></button>
+    {open && <div className="mode-menu" role="listbox">{playModes.map((item) => <button className={item.value === mode ? 'active' : ''} type="button" role="option" aria-selected={item.value === mode} key={item.value} onClick={() => { onChange(item.value); setOpen(false); }}><span><Icon name={item.icon} /></span><span><strong>{item.short}</strong><small>{item.label}</small></span>{item.value === mode && <b><Icon name="favorites" size={16} /></b>}</button>)}</div>}
   </div>;
 }
 
-function FilterButton({ active, icon, label, count, onClick }: { active: boolean; icon: string; label: string; count?: number; onClick: () => void }) {
-  return <button className={`category ${active ? 'active' : ''}`} type="button" onClick={onClick}><span className="category-icon">{icon}</span><strong>{label}</strong>{typeof count === 'number' && <small>{count}</small>}</button>;
+function FilterButton({ active, icon, label, count, onClick }: { active: boolean; icon: IconName; label: string; count?: number; onClick: () => void }) {
+  return <button className={`category ${active ? 'active' : ''}`} type="button" onClick={onClick}><span className="category-icon"><Icon name={icon} /></span><strong>{label}</strong>{typeof count === 'number' && <small>{count}</small>}</button>;
 }
 
 function filterLabel(filter: Filter, tags: Tag[]) {
@@ -500,14 +506,4 @@ function formatTime(seconds: number) {
 function coverToneFor(title: string) {
   const value = Array.from(title).reduce((sum, character) => sum + (character.codePointAt(0) ?? 0), 0);
   return coverTones[value % coverTones.length];
-}
-
-function coverIconFor(title: string) {
-  const value = title.toLowerCase();
-  const rules: Array<[string[], string]> = [
-    [['shark'], '🦈'], [['fish', 'ocean', 'sea', 'sailor', 'jellyfish'], '🐠'], [['duck', 'chick', 'bird'], '🐥'], [['frog'], '🐸'], [['spider'], '🕷️'], [['dinosaur'], '🦕'], [['bear', 'teddy'], '🧸'], [['monkey'], '🐒'], [['pet', 'farm', 'macdonald'], '🐮'],
-    [['bus'], '🚌'], [['car'], '🚗'], [['truck', 'tractor'], '🚚'], [['airplane', 'rocket', 'planet'], '🚀'], [['boat', 'bay'], '⛵'], [['bicycle'], '🚲'], [['christmas', 'santa', 'reindeer', 'jingle', 'snow', 'elf'], '🎄'], [['halloween', 'ghost', 'monster', 'pumpkin', 'spooky'], '🎃'],
-    [['star', 'night', 'dream', 'sleep', 'bed', 'nap'], '🌙'], [['sun', 'weather', 'rain'], '🌤️'], [['rainbow', 'color', 'blue', 'pink', 'yellow', 'purple'], '🌈'], [['alphabet', 'abc'], '🔤'], [['count', 'number', 'ten', 'seven', 'six', 'five'], '🔢'], [['ice cream'], '🍦'], [['pizza'], '🍕'], [['apple'], '🍎'], [['banana'], '🍌'], [['cookie'], '🍪'], [['happy', 'friend', 'love', 'hello'], '💛'], [['dance', 'move', 'walking', 'follow'], '💃'],
-  ];
-  return rules.find(([keywords]) => keywords.some((keyword) => value.includes(keyword)))?.[1] ?? '🎵';
 }
