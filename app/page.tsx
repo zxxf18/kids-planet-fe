@@ -43,6 +43,20 @@ const tagIcons: Record<string, IconName> = {
   routines: 'routines', food: 'food', nature: 'nature', friends: 'friends',
 };
 const coverTones = ['sun', 'night', 'mint', 'coral', 'sky', 'grape'];
+const videoFrames = [
+  { id: 'space', label: '星空伙伴', src: '/kidstar/video-frames/space.png' },
+  { id: 'rainbow', label: '彩虹云朵', src: '/kidstar/video-frames/rainbow.png' },
+  { id: 'woodland', label: '森林动物', src: '/kidstar/video-frames/woodland.png' },
+  { id: 'ocean', label: '海底世界', src: '/kidstar/video-frames/ocean.png' },
+  { id: 'dinosaur', label: '恐龙乐园', src: '/kidstar/video-frames/dinosaur.png' },
+  { id: 'toys', label: '玩具火车', src: '/kidstar/video-frames/toys.png' },
+] as const;
+
+function randomVideoFrameIndex(current: number | null) {
+  if (videoFrames.length < 2) return 0;
+  const candidate = Math.floor(Math.random() * (current === null ? videoFrames.length : videoFrames.length - 1));
+  return current !== null && candidate >= current ? candidate + 1 : candidate;
+}
 
 export default function Home() {
   const [library, setLibrary] = useState<MediaItem[]>([]);
@@ -74,6 +88,7 @@ export default function Home() {
   const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const [lyricsStatus, setLyricsStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
   const [videoOpen, setVideoOpen] = useState(false);
+  const [videoFrameIndex, setVideoFrameIndex] = useState<number | null>(null);
   const [videoCountdown, setVideoCountdown] = useState<number | null>(null);
   const mediaRef = useRef<HTMLMediaElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -214,7 +229,10 @@ export default function Home() {
     setActive(item);
     setKind(nextKind);
     setVideoOpen(nextKind === 'video');
-    if (nextKind === 'video') setLyricsOpen(false);
+    if (nextKind === 'video') {
+      setLyricsOpen(false);
+      setVideoFrameIndex((current) => randomVideoFrameIndex(current));
+    }
     setVideoCountdown(null);
     setPlaying(false);
     setCurrentTime(0);
@@ -302,7 +320,10 @@ export default function Home() {
     mediaRef.current?.pause();
     setKind(nextKind);
     setVideoOpen(nextKind === 'video');
-    if (nextKind === 'video') setLyricsOpen(false);
+    if (nextKind === 'video') {
+      setLyricsOpen(false);
+      setVideoFrameIndex((current) => randomVideoFrameIndex(current));
+    }
     if (nextKind === 'audio' && active.audioUrl && audioRef.current) {
       const element = audioRef.current;
       mediaRef.current = element;
@@ -349,6 +370,7 @@ export default function Home() {
 
   const toggleSingleRepeat = () => setMode((current) => current === 'single' ? lastNonSingleMode : 'single');
   const selectedMode = mode === 'single' ? lastNonSingleMode : mode;
+  const videoFrame = videoFrames[videoFrameIndex ?? 0];
 
   return (
     <main className={`app-shell ${lyricsOpen ? 'lyrics-expanded' : ''}`}>
@@ -447,7 +469,9 @@ export default function Home() {
       {videoOpen && kind === 'video' && active?.videoUrl && <div className="video-overlay" role="presentation" onClick={closeVideo}>
         <section className="video-player" role="dialog" aria-modal="true" aria-label={`${active.titleZh} 视频`} onClick={(event) => event.stopPropagation()}>
           <button className="back-to-library" type="button" onClick={closeVideo}><Icon name="back" />返回儿歌架</button>
+          <button className="change-video-frame" type="button" onClick={() => setVideoFrameIndex((current) => ((current ?? -1) + 1) % videoFrames.length)} title={`当前边框：${videoFrame.label}`}><Icon name="frameSwitch" />换边框</button>
           <video key={`video-${active.id}`} ref={(node) => { videoRef.current = node; mediaRef.current = node; if (node) node.volume = volume; }} src={active.videoUrl} poster={active.posterUrl} preload="metadata" playsInline controls onLoadedMetadata={(event) => void handleMediaReady(event.currentTarget)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onDurationChange={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)} onEnded={handleEnded} />
+          <img className="video-frame-overlay" src={videoFrame.src} alt="" aria-hidden="true" draggable={false} />
           {!playing && videoCountdown === null && <button className="video-big-play" type="button" onClick={togglePlayback} aria-label="播放视频"><Icon name="play" size={38} /></button>}
           {videoCountdown !== null && <div className="next-video-countdown"><strong>{videoCountdown} 秒后播放下一首</strong><button type="button" onClick={() => setVideoCountdown(null)}>留在这里</button></div>}
         </section>

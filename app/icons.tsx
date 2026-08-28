@@ -3,7 +3,7 @@ import type { SVGProps } from 'react';
 export type IconName =
   | 'alphabet' | 'animals' | 'back' | 'bedtime' | 'chevronDown' | 'chevronUp'
   | 'colors' | 'favorites' | 'food' | 'friends' | 'grid' | 'holidays' | 'lyrics'
-  | 'movement' | 'music' | 'nature' | 'next' | 'numbers' | 'order' | 'pause'
+  | 'frameSwitch' | 'movement' | 'music' | 'nature' | 'next' | 'numbers' | 'order' | 'pause'
   | 'play' | 'previous' | 'repeatAll' | 'repeatOne' | 'repeatShuffle' | 'routines'
   | 'search' | 'seekBack10' | 'seekForward10' | 'shuffle' | 'star' | 'vehicles'
   | 'video' | 'volume';
@@ -39,6 +39,7 @@ function iconBody(name: IconName) {
     case 'music': return <><path d="M9 18V6l10-2v12" /><circle cx="6" cy="18" r="3" /><circle cx="16" cy="16" r="3" /></>;
     case 'video': return <><rect x="3" y="5" width="18" height="14" rx="3" /><path fill="currentColor" stroke="none" d="m10 9 6 3-6 3V9Z" /></>;
     case 'lyrics': return <><path d="M5 6h9M5 10h9M5 14h6" /><path d="M17 8v8.5" /><circle cx="14.5" cy="17" r="2.5" /></>;
+    case 'frameSwitch': return <><rect x="4.5" y="4.5" width="15" height="15" rx="2.8" /><path d="M8 4.5V2.8h12.2a1 1 0 0 1 1 1V16h-1.7M7.5 15l3.2-3.4 2.7 2.6 2.3-2.3 3.8 3.8" /><circle cx="9" cy="9" r="1.3" /></>;
     case 'play': return <path fill="currentColor" stroke="none" d="m8 5 11 7-11 7V5Z" />;
     case 'pause': return <><rect x="7" y="5" width="3.5" height="14" rx="1" fill="currentColor" stroke="none" /><rect x="13.5" y="5" width="3.5" height="14" rx="1" fill="currentColor" stroke="none" /></>;
     case 'previous': return <><path d="M6 5v14" /><path fill="currentColor" stroke="none" d="m18 5-9 7 9 7V5Z" /></>;
