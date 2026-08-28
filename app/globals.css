@@ -30,7 +30,7 @@ audio { display: none; }
 
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .app-shell { min-height: 100vh; position: relative; isolation: isolate; padding-bottom: 26px; }
-.app-shell::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-color: #fff9ec; background-image: linear-gradient(rgba(255, 253, 246, .06), rgba(255, 249, 235, .12)), url('/backgrounds/library-world.png'); background-position: center, center; background-size: cover, cover; background-repeat: no-repeat; }
+.app-shell::before { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; background-color: #fff9ec; background-image: linear-gradient(rgba(255, 253, 246, .06), rgba(255, 249, 235, .12)), url('/kidstar/backgrounds/library-world.png'); background-position: center, center; background-size: cover, cover; background-repeat: no-repeat; }
 
 .topbar {
   width: min(1500px, 100%);
@@ -192,7 +192,7 @@ button:focus-visible, input:focus-visible { outline: 4px solid rgba(61, 133, 231
 }
 
 @media (orientation: portrait) and (max-width: 1024px) {
-  .app-shell::before { background-image: linear-gradient(rgba(255, 253, 246, .08), rgba(255, 249, 235, .16)), url('/backgrounds/library-world-mobile.png'); background-position: center, center; background-size: cover, 100% 100%; }
+  .app-shell::before { background-image: linear-gradient(rgba(255, 253, 246, .08), rgba(255, 249, 235, .16)), url('/kidstar/backgrounds/library-world-mobile.png'); background-position: center, center; background-size: cover, 100% 100%; }
 }
 
 @media (max-width: 720px) {

@@ -11,7 +11,7 @@ npm ci
 API_PROXY_TARGET=http://127.0.0.1:8888 npm run dev
 ```
 
-打开 `http://localhost:3000`。
+打开 `http://localhost:3000/kidstar/`。
 
 ## 验证
 
@@ -27,7 +27,7 @@ docker build -t kids-planet-fe .
 docker run --rm -p 3000:3000 kids-planet-fe
 ```
 
-浏览器请求使用同源 `/api`。生产部署时应由网关或反向代理把 `/api/*` 转发到 `kids-planet-be`，其余请求转发到本前端容器。
+浏览器请求使用同源 `/kidstar/api`。生产部署时应由网关把 `/kidstar/api/*` 转发到 `kids-planet-be`，其余 `/kidstar/*` 请求转发到本前端容器。
 
 ## License
 

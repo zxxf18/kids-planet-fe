@@ -14,6 +14,7 @@ resources
 public/song
 public/video
 public/lyrics
+public/lyr_img
 public/poster
 public/covers
 *.mp3

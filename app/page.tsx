@@ -58,7 +58,7 @@ export default function Home() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch('/api/v1/media?page=1&pageSize=500', { signal: controller.signal })
+    fetch('/kidstar/api/v1/media?page=1&pageSize=500', { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`媒体服务返回 ${response.status}`);
         return response.json() as Promise<{ items: MediaItem[]; total: number }>;

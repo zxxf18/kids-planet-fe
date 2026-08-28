@@ -51,9 +51,10 @@ export default defineConfig(async () => {
         ? { watch: { useFsEvents: false, usePolling: true } }
         : {}),
       proxy: {
-        '/api': {
+        '/kidstar/api': {
           target: process.env.API_PROXY_TARGET ?? 'http://127.0.0.1:8888',
           changeOrigin: true,
+          rewrite: (requestPath) => requestPath.replace(/^\/kidstar/, ''),
         },
       },
     },
