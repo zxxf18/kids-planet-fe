@@ -628,7 +628,7 @@ export default function Home() {
         </section>
       </div>
 
-      {videoOpen && kind === 'video' && active && activeVideoURL && <div className="video-overlay" role="presentation" onClick={closeVideo}>
+      {videoOpen && kind === 'video' && active && activeVideoURL && <div className={`video-overlay${isPseudoFullscreen ? ' fullscreen-fallback' : ''}`} role="presentation" onClick={closeVideo}>
         <section className="video-player" role="dialog" aria-modal="true" aria-label={`${active.titleZh} 视频`} onClick={(event) => event.stopPropagation()}>
           <div className="video-toolbar">
             <button className="back-to-library" type="button" onClick={closeVideo}><Icon name="back" />返回儿歌架</button>
