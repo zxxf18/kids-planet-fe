@@ -118,6 +118,7 @@ export default function Home() {
   const [videoSubtitlesEnabled, setVideoSubtitlesEnabled] = useState(false);
   const [videoLyrics, setVideoLyrics] = useState<LyricLine[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
   const [videoCountdown, setVideoCountdown] = useState<number | null>(null);
   const mediaRef = useRef<HTMLMediaElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -275,10 +276,31 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const onFullscreenChange = () => setIsFullscreen(document.fullscreenElement === videoStageRef.current);
+    const onFullscreenChange = () => {
+      const active = document.fullscreenElement === videoStageRef.current;
+      setIsFullscreen(active);
+      if (!active) {
+        const orientation = screen.orientation as (ScreenOrientation & { unlock?: () => void }) | undefined;
+        try { orientation?.unlock?.(); } catch { /* The browser may not expose orientation unlock. */ }
+      }
+    };
     document.addEventListener('fullscreenchange', onFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
   }, []);
+
+  useEffect(() => {
+    if (!isPseudoFullscreen) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsPseudoFullscreen(false);
+    };
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isPseudoFullscreen]);
 
   const randomize = useCallback((ids: number[]) => {
     const result = [...ids];
@@ -409,10 +431,45 @@ export default function Home() {
   const toggleFullscreen = async () => {
     const stage = videoStageRef.current;
     if (!stage) return;
+
+    const orientation = screen.orientation as (ScreenOrientation & {
+      lock?: (value: 'landscape') => Promise<void>;
+      unlock?: () => void;
+    }) | undefined;
+    const mobileViewport = window.matchMedia('(max-width: 900px), (pointer: coarse)').matches;
+
     try {
-      if (document.fullscreenElement === stage) await document.exitFullscreen();
-      else await stage.requestFullscreen();
-    } catch { setIsFullscreen(false); }
+      if (document.fullscreenElement === stage || isPseudoFullscreen) {
+        if (document.fullscreenElement === stage) await document.exitFullscreen();
+        setIsPseudoFullscreen(false);
+        try { orientation?.unlock?.(); } catch { /* Unsupported on some mobile browsers. */ }
+        return;
+      }
+
+      if (typeof stage.requestFullscreen !== 'function') {
+        setIsPseudoFullscreen(true);
+        return;
+      }
+
+      await stage.requestFullscreen();
+      if (!mobileViewport) return;
+
+      try {
+        if (typeof orientation?.lock !== 'function') throw new Error('orientation lock unsupported');
+        await orientation.lock('landscape');
+      } catch {
+        // iOS Safari and some embedded browsers do not allow page orientation locks.
+        // Leave native fullscreen and use a rotated, viewport-filling stage so the
+        // custom frame and controls remain available.
+        if (window.matchMedia('(orientation: portrait)').matches) {
+          if (document.fullscreenElement === stage) await document.exitFullscreen();
+          setIsPseudoFullscreen(true);
+        }
+      }
+    } catch {
+      setIsFullscreen(false);
+      setIsPseudoFullscreen(true);
+    }
   };
 
   const switchKind = (nextKind: MediaKind) => {
@@ -441,6 +498,7 @@ export default function Home() {
   const closeVideo = () => {
     setVideoCountdown(null);
     if (document.fullscreenElement === videoStageRef.current) void document.exitFullscreen();
+    setIsPseudoFullscreen(false);
     if (active?.hasAudio) switchKind('audio');
     else { mediaRef.current?.pause(); setVideoOpen(false); setPlaying(false); }
   };
@@ -578,10 +636,10 @@ export default function Home() {
               <button type="button" disabled={!active.videoSources?.[videoQuality === '720' ? '480' : '720']} onClick={() => switchVideoQuality(videoQuality === '720' ? '480' : '720')} title="切换视频清晰度"><Icon name="quality" />{videoQuality}P</button>
               <button className={videoSubtitlesEnabled ? 'active' : ''} type="button" disabled={!active.lyricsSources?.zh} aria-pressed={videoSubtitlesEnabled} onClick={() => setVideoSubtitlesEnabled((enabled) => !enabled)}><Icon name="subtitles" />中文</button>
               <button className="change-video-frame" type="button" onClick={() => setVideoFrameIndex((current) => ((current ?? -1) + 1) % videoFrames.length)} title={`当前边框：${videoFrame.label}`}><Icon name="frameSwitch" />边框</button>
-              <button type="button" onClick={() => void toggleFullscreen()}><Icon name="fullscreen" />全屏</button>
+              <button type="button" onClick={() => void toggleFullscreen()}><Icon name={isFullscreen || isPseudoFullscreen ? 'fullscreenExit' : 'fullscreen'} />{isFullscreen || isPseudoFullscreen ? '退出' : '全屏'}</button>
             </div>
           </div>
-          <div className="video-stage" ref={videoStageRef}>
+          <div className={`video-stage${isPseudoFullscreen ? ' pseudo-fullscreen' : ''}`} ref={videoStageRef}>
             <div className="video-canvas">
               <video key={`video-${active.id}-${videoQuality}`} ref={(node) => { videoRef.current = node; mediaRef.current = node; if (node) node.volume = volume; }} src={activeVideoURL} poster={active.posterUrl} preload="metadata" playsInline controls={false} controlsList="nofullscreen noremoteplayback" disablePictureInPicture onClick={() => void togglePlayback()} onLoadedMetadata={(event) => void handleMediaReady(event.currentTarget)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onDurationChange={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)} onEnded={handleEnded} />
               <div className="video-frame-overlay" aria-hidden="true">
@@ -597,7 +655,7 @@ export default function Home() {
                 <input aria-label="视频播放进度" type="range" min="0" max={Math.max(duration, 0)} step="0.1" value={Math.min(currentTime, duration || 0)} onChange={(event) => { const value = Number(event.target.value); if (videoRef.current) videoRef.current.currentTime = value; setCurrentTime(value); }} style={{ '--video-progress': `${duration > 0 ? (currentTime / duration) * 100 : 0}%` } as React.CSSProperties} />
                 <span>{formatTime(duration || (active.videoDurationMs ?? 0) / 1000)}</span>
                 <button type="button" onClick={toggleMute} aria-label={volume === 0 ? '恢复视频音量' : '静音视频'}><Icon name={volume === 0 ? 'volumeMute' : 'volume'} /></button>
-                <button type="button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen ? '退出全屏' : '进入全屏'}><Icon name={isFullscreen ? 'fullscreenExit' : 'fullscreen'} /></button>
+                <button type="button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen || isPseudoFullscreen ? '退出全屏' : '进入全屏'}><Icon name={isFullscreen || isPseudoFullscreen ? 'fullscreenExit' : 'fullscreen'} /></button>
               </div>
             </div>
           </div>
