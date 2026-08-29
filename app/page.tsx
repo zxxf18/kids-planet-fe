@@ -119,6 +119,7 @@ export default function Home() {
   const [videoLyrics, setVideoLyrics] = useState<LyricLine[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
+  const [fullscreenControlsVisible, setFullscreenControlsVisible] = useState(true);
   const [videoCountdown, setVideoCountdown] = useState<number | null>(null);
   const mediaRef = useRef<HTMLMediaElement | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -133,6 +134,8 @@ export default function Home() {
   const libraryRef = useRef<HTMLDivElement | null>(null);
   const loadSentinelRef = useRef<HTMLDivElement | null>(null);
   const lyricLineRefs = useRef<Array<HTMLParagraphElement | null>>([]);
+  const fullscreenControlsTimerRef = useRef<number | null>(null);
+  const fullscreenActive = isFullscreen || isPseudoFullscreen;
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedQuery(query.trim()), 320);
@@ -301,6 +304,31 @@ export default function Home() {
       document.removeEventListener('keydown', closeOnEscape);
     };
   }, [isPseudoFullscreen]);
+
+  const revealFullscreenControls = useCallback(() => {
+    if (fullscreenControlsTimerRef.current !== null) {
+      window.clearTimeout(fullscreenControlsTimerRef.current);
+      fullscreenControlsTimerRef.current = null;
+    }
+    setFullscreenControlsVisible(true);
+    if (fullscreenActive && playing) {
+      fullscreenControlsTimerRef.current = window.setTimeout(() => {
+        setFullscreenControlsVisible(false);
+        fullscreenControlsTimerRef.current = null;
+      }, 5000);
+    }
+  }, [fullscreenActive, playing]);
+
+  useEffect(() => {
+    const initializeTimer = window.setTimeout(revealFullscreenControls, 0);
+    return () => {
+      window.clearTimeout(initializeTimer);
+      if (fullscreenControlsTimerRef.current !== null) {
+        window.clearTimeout(fullscreenControlsTimerRef.current);
+        fullscreenControlsTimerRef.current = null;
+      }
+    };
+  }, [revealFullscreenControls]);
 
   const randomize = useCallback((ids: number[]) => {
     const result = [...ids];
@@ -535,7 +563,7 @@ export default function Home() {
   const videoFrame = videoFrames[videoFrameIndex ?? 0];
 
   return (
-    <main className={`app-shell ${lyricsOpen ? 'lyrics-expanded' : ''}`}>
+    <main className={`app-shell${videoOpen ? ' video-mode' : ''}${lyricsOpen && !videoOpen ? ' lyrics-expanded' : ''}`}>
       <header className="topbar">
         <button className="brand" type="button" onClick={() => { setFilter('all'); setQuery(''); }} aria-label="返回全部儿歌">
           <span className="brand-mark"><Icon name="star" /></span><span>童声星球</span>
@@ -588,8 +616,8 @@ export default function Home() {
       </div>
 
       <div className="player-zone">
-        <section className={`player-dock ${lyricsOpen ? 'with-lyrics' : ''}`} aria-label="当前播放器">
-          {lyricsOpen && <div className="lyrics-panel">
+        <section className={`player-dock ${lyricsOpen && !videoOpen ? 'with-lyrics' : ''}`} aria-label="当前播放器">
+          {lyricsOpen && !videoOpen && <div className="lyrics-panel">
             <button className="drawer-handle" type="button" onClick={() => setLyricsOpen(false)} aria-label="收起歌词"><span /></button>
             <div className="lyrics-title"><span><Icon name="lyrics" size={17} />跟着一起唱</span><div className="lyrics-title-actions"><div className="lyric-language-switch" role="group" aria-label="歌词语言">{lyricLanguages.map((language) => <button className={lyricLanguage === language.value ? 'active' : ''} type="button" key={language.value} disabled={!active?.lyricsSources?.[language.value]} onClick={() => changeLyricLanguage(language.value)}>{language.label}</button>)}</div><button className="collapse-lyrics" type="button" onClick={() => setLyricsOpen(false)}>收起歌词<Icon name="chevronDown" size={15} /></button></div></div>
             <div className="lyrics-scroll">
@@ -617,7 +645,7 @@ export default function Home() {
             <div className="player-actions">
               <button className={kind === 'audio' && !videoOpen ? 'active' : ''} disabled={!active?.hasAudio} onClick={() => switchKind('audio')} type="button"><Icon name="music" /><span>听</span></button>
               <button className={kind === 'video' && videoOpen ? 'active video' : ''} disabled={!active?.hasVideo} onClick={() => switchKind('video')} type="button"><Icon name="video" /><span>看</span></button>
-              <button className={lyricsOpen ? 'active lyrics' : ''} disabled={!active?.hasLyrics} onClick={() => { if (videoOpen) closeVideo(); setLyricsOpen((open) => !open); }} type="button"><Icon name="lyrics" /><span>歌词</span></button>
+              <button className={lyricsOpen ? 'active lyrics' : ''} disabled={!active?.hasLyrics} onClick={() => setLyricsOpen((open) => !open)} type="button"><Icon name="lyrics" /><span>歌词</span></button>
               <button className={mode === 'single' ? 'active repeat-one' : ''} disabled={!active} onClick={toggleSingleRepeat} type="button" aria-pressed={mode === 'single'} title="单曲循环"><Icon name="repeatOne" /><span>单曲</span></button>
               <ModePicker mode={selectedMode} onChange={setListMode} />
             </div>
@@ -629,19 +657,20 @@ export default function Home() {
       </div>
 
       {videoOpen && kind === 'video' && active && activeVideoURL && <div className={`video-overlay${isPseudoFullscreen ? ' fullscreen-fallback' : ''}`} role="presentation" onClick={closeVideo}>
-        <section className="video-player" role="dialog" aria-modal="true" aria-label={`${active.titleZh} 视频`} onClick={(event) => event.stopPropagation()}>
+        <div className={`video-experience${lyricsOpen ? ' with-lyrics' : ''}`} role="dialog" aria-modal="true" aria-label={`${active.titleZh} 视频`} onClick={(event) => event.stopPropagation()}>
+        <section className="video-player">
           <div className="video-toolbar">
             <button className="back-to-library" type="button" onClick={closeVideo}><Icon name="back" />返回儿歌架</button>
             <div>
               <button type="button" disabled={!active.videoSources?.[videoQuality === '720' ? '480' : '720']} onClick={() => switchVideoQuality(videoQuality === '720' ? '480' : '720')} title="切换视频清晰度"><Icon name="quality" />{videoQuality}P</button>
               <button className={videoSubtitlesEnabled ? 'active' : ''} type="button" disabled={!active.lyricsSources?.zh} aria-pressed={videoSubtitlesEnabled} onClick={() => setVideoSubtitlesEnabled((enabled) => !enabled)}><Icon name="subtitles" />中文</button>
               <button className="change-video-frame" type="button" onClick={() => setVideoFrameIndex((current) => ((current ?? -1) + 1) % videoFrames.length)} title={`当前边框：${videoFrame.label}`}><Icon name="frameSwitch" />边框</button>
-              <button type="button" onClick={() => void toggleFullscreen()}><Icon name={isFullscreen || isPseudoFullscreen ? 'fullscreenExit' : 'fullscreen'} />{isFullscreen || isPseudoFullscreen ? '退出' : '全屏'}</button>
+              <button type="button" onClick={() => void toggleFullscreen()}><Icon name={fullscreenActive ? 'fullscreenExit' : 'fullscreen'} />{fullscreenActive ? '退出' : '全屏'}</button>
             </div>
           </div>
-          <div className={`video-stage${isPseudoFullscreen ? ' pseudo-fullscreen' : ''}`} ref={videoStageRef}>
+          <div className={`video-stage${isPseudoFullscreen ? ' pseudo-fullscreen' : ''}${fullscreenActive && !fullscreenControlsVisible ? ' fullscreen-controls-hidden' : ''}`} ref={videoStageRef} onPointerMove={revealFullscreenControls} onPointerDown={revealFullscreenControls}>
             <div className="video-canvas">
-              <video key={`video-${active.id}-${videoQuality}`} ref={(node) => { videoRef.current = node; mediaRef.current = node; if (node) node.volume = volume; }} src={activeVideoURL} poster={active.posterUrl} preload="metadata" playsInline controls={false} controlsList="nofullscreen noremoteplayback" disablePictureInPicture onClick={() => void togglePlayback()} onLoadedMetadata={(event) => void handleMediaReady(event.currentTarget)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onDurationChange={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)} onEnded={handleEnded} />
+              <video key={`video-${active.id}-${videoQuality}`} ref={(node) => { videoRef.current = node; mediaRef.current = node; if (node) node.volume = volume; }} src={activeVideoURL} poster={active.posterUrl} preload="metadata" playsInline controls={false} controlsList="nofullscreen noremoteplayback" disablePictureInPicture onLoadedMetadata={(event) => void handleMediaReady(event.currentTarget)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onDurationChange={(event) => setDuration(Number.isFinite(event.currentTarget.duration) ? event.currentTarget.duration : 0)} onEnded={handleEnded} />
               <div className="video-frame-overlay" aria-hidden="true">
                 <img className="video-frame-main" src={videoFrame.src} alt="" draggable={false} />
                 <span className="video-frame-bottom"><img src={videoFrame.src} alt="" draggable={false} /></span>
@@ -649,17 +678,31 @@ export default function Home() {
               {videoSubtitlesEnabled && currentVideoLyricIndex >= 0 && <p className="video-lyric-line">{videoLyrics[currentVideoLyricIndex].text}</p>}
               {!playing && videoCountdown === null && <button className="video-big-play" type="button" onClick={togglePlayback} aria-label="播放视频"><Icon name="play" size={38} /></button>}
               {videoCountdown !== null && <div className="next-video-countdown"><strong>{videoCountdown} 秒后播放下一首</strong><button type="button" onClick={() => setVideoCountdown(null)}>留在这里</button></div>}
-              <div className="video-controls" role="group" aria-label="视频播放控制">
-                <button className="video-control-play" type="button" onClick={() => void togglePlayback()} aria-label={playing ? '暂停视频' : '播放视频'}><Icon name={playing ? 'pause' : 'play'} /></button>
-                <span>{formatTime(currentTime)}</span>
-                <input aria-label="视频播放进度" type="range" min="0" max={Math.max(duration, 0)} step="0.1" value={Math.min(currentTime, duration || 0)} onChange={(event) => { const value = Number(event.target.value); if (videoRef.current) videoRef.current.currentTime = value; setCurrentTime(value); }} style={{ '--video-progress': `${duration > 0 ? (currentTime / duration) * 100 : 0}%` } as React.CSSProperties} />
-                <span>{formatTime(duration || (active.videoDurationMs ?? 0) / 1000)}</span>
-                <button type="button" onClick={toggleMute} aria-label={volume === 0 ? '恢复视频音量' : '静音视频'}><Icon name={volume === 0 ? 'volumeMute' : 'volume'} /></button>
-                <button type="button" onClick={() => void toggleFullscreen()} aria-label={isFullscreen || isPseudoFullscreen ? '退出全屏' : '进入全屏'}><Icon name={isFullscreen || isPseudoFullscreen ? 'fullscreenExit' : 'fullscreen'} /></button>
-              </div>
+            </div>
+            <div className="video-controls" role="group" aria-label="视频播放控制">
+              <button className="video-control-play" type="button" onClick={() => void togglePlayback()} aria-label={playing ? '暂停视频' : '播放视频'}><Icon name={playing ? 'pause' : 'play'} /></button>
+              <span>{formatTime(currentTime)}</span>
+              <input aria-label="视频播放进度" type="range" min="0" max={Math.max(duration, 0)} step="0.1" value={Math.min(currentTime, duration || 0)} onChange={(event) => { const value = Number(event.target.value); if (videoRef.current) videoRef.current.currentTime = value; setCurrentTime(value); }} style={{ '--video-progress': `${duration > 0 ? (currentTime / duration) * 100 : 0}%` } as React.CSSProperties} />
+              <span>{formatTime(duration || (active.videoDurationMs ?? 0) / 1000)}</span>
+              <button className={volume === 0 ? 'muted' : ''} type="button" onClick={toggleMute} aria-label={volume === 0 ? '恢复视频音量' : '静音视频'} aria-pressed={volume === 0}><Icon name={volume === 0 ? 'volumeMute' : 'volume'} /></button>
+              <button type="button" onClick={() => void toggleFullscreen()} aria-label={fullscreenActive ? '退出全屏' : '进入全屏'}><Icon name={fullscreenActive ? 'fullscreenExit' : 'fullscreen'} /></button>
             </div>
           </div>
         </section>
+        {lyricsOpen && !fullscreenActive && <aside className="video-lyrics-panel" aria-label="视频同步歌词">
+          <div className="video-lyrics-title">
+            <span><Icon name="lyrics" size={17} />同步歌词</span>
+            <div className="lyric-language-switch" role="group" aria-label="视频歌词语言">{lyricLanguages.map((language) => <button className={lyricLanguage === language.value ? 'active' : ''} type="button" key={language.value} disabled={!active.lyricsSources?.[language.value]} onClick={() => changeLyricLanguage(language.value)}>{language.label}</button>)}</div>
+          </div>
+          <div className="video-lyrics-scroll">
+            {lyricsStatus === 'loading' && <p className="lyric-message">歌词正在打开…</p>}
+            {lyricsStatus === 'error' && <p className="lyric-message">这首歌词暂时没有准备好</p>}
+            {lyricsStatus === 'ready' && lyrics.length === 0 && <p className="lyric-message">这首歌词还是空的</p>}
+            {lyrics.map((line, index) => <p key={`${line.time}-${index}`} ref={(node) => { lyricLineRefs.current[index] = node; }} className={index === currentLyricIndex ? 'active' : index < currentLyricIndex ? 'passed' : ''} onClick={() => { if (mediaRef.current) mediaRef.current.currentTime = line.time; }}>{line.text}</p>)}
+          </div>
+          <button className="close-video-lyrics" type="button" onClick={() => setLyricsOpen(false)}><Icon name="chevronDown" size={15} />收起歌词</button>
+        </aside>}
+        </div>
       </div>}
     </main>
   );
