@@ -18,8 +18,12 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const videoFrames = ['space', 'rainbow', 'woodland', 'ocean', 'dinosaur', 'toys'];
   return (
     <html lang="zh-CN">
+      <head>
+        {videoFrames.map((frame) => <link key={frame} rel="preload" href={`/kidstar/video-frames/${frame}-v2.webp`} as="image" type="image/webp" />)}
+      </head>
       <body>{children}</body>
     </html>
   );

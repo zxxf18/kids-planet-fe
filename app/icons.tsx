@@ -2,11 +2,11 @@ import type { SVGProps } from 'react';
 
 export type IconName =
   | 'alphabet' | 'animals' | 'back' | 'bedtime' | 'chevronDown' | 'chevronUp'
-  | 'colors' | 'favorites' | 'food' | 'friends' | 'grid' | 'holidays' | 'lyrics'
+  | 'colors' | 'favorites' | 'food' | 'friends' | 'fullscreen' | 'fullscreenExit' | 'grid' | 'holidays' | 'lyrics'
   | 'frameSwitch' | 'movement' | 'music' | 'nature' | 'next' | 'numbers' | 'order' | 'pause'
   | 'play' | 'previous' | 'repeatAll' | 'repeatOne' | 'repeatShuffle' | 'routines'
-  | 'search' | 'seekBack10' | 'seekForward10' | 'shuffle' | 'star' | 'vehicles'
-  | 'video' | 'volume';
+  | 'quality' | 'search' | 'seekBack10' | 'seekForward10' | 'shuffle' | 'star' | 'subtitles' | 'vehicles'
+  | 'video' | 'volume' | 'volumeMute';
 
 type IconProps = SVGProps<SVGSVGElement> & { name: IconName; size?: number };
 
@@ -52,6 +52,11 @@ function iconBody(name: IconName) {
     case 'repeatAll': return <><path d="M7 5h9a4 4 0 0 1 4 4M17 2l3 3-3 3M17 19H8a4 4 0 0 1-4-4M7 22l-3-3 3-3" /></>;
     case 'repeatOne': return <><path d="M7 5h9a4 4 0 0 1 4 4M17 2l3 3-3 3M17 19H8a4 4 0 0 1-4-4M7 22l-3-3 3-3" /><text x="12" y="15" textAnchor="middle" fill="currentColor" stroke="none" fontSize="8" fontWeight="900">1</text></>;
     case 'volume': return <><path d="M5 10h3l4-4v12l-4-4H5v-4Z" /><path d="M15 9a4 4 0 0 1 0 6M17.5 6.5a7.5 7.5 0 0 1 0 11" /></>;
+    case 'volumeMute': return <><path d="M5 10h3l4-4v12l-4-4H5v-4Z" /><path d="m16 10 5 5M21 10l-5 5" /></>;
+    case 'quality': return <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M7 10h3v4H7zM14 9v6M14 12h3" /></>;
+    case 'subtitles': return <><rect x="3" y="5" width="18" height="14" rx="3" /><path d="M7 11h4M7 15h6M15 11h2M15 15h2" /></>;
+    case 'fullscreen': return <><path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" /></>;
+    case 'fullscreenExit': return <><path d="M4 9h5V4M20 9h-5V4M4 15h5v5M20 15h-5v5" /></>;
     case 'back': return <><path d="m9 6-6 6 6 6M4 12h16" /></>;
     case 'chevronUp': return <path d="m7 14 5-5 5 5" />;
     case 'chevronDown': return <path d="m7 10 5 5 5-5" />;
