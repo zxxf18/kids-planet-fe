@@ -47,12 +47,12 @@ const tagIcons: Record<string, IconName> = {
 };
 const coverTones = ['sun', 'night', 'mint', 'coral', 'sky', 'grape'];
 const videoFrames = [
-  { id: 'space', label: '星空伙伴', src: '/kidstar/video-frames/space-v2.webp' },
-  { id: 'rainbow', label: '彩虹云朵', src: '/kidstar/video-frames/rainbow-v2.webp' },
-  { id: 'woodland', label: '森林动物', src: '/kidstar/video-frames/woodland-v2.webp' },
-  { id: 'ocean', label: '海底世界', src: '/kidstar/video-frames/ocean-v2.webp' },
-  { id: 'dinosaur', label: '恐龙乐园', src: '/kidstar/video-frames/dinosaur-v2.webp' },
-  { id: 'toys', label: '玩具火车', src: '/kidstar/video-frames/toys-v2.webp' },
+  { id: 'space', label: '星空伙伴', src: '/video-frames/space-v2.webp' },
+  { id: 'rainbow', label: '彩虹云朵', src: '/video-frames/rainbow-v2.webp' },
+  { id: 'woodland', label: '森林动物', src: '/video-frames/woodland-v2.webp' },
+  { id: 'ocean', label: '海底世界', src: '/video-frames/ocean-v2.webp' },
+  { id: 'dinosaur', label: '恐龙乐园', src: '/video-frames/dinosaur-v2.webp' },
+  { id: 'toys', label: '玩具火车', src: '/video-frames/toys-v2.webp' },
 ] as const;
 const lyricLanguages: { value: LyricLanguage; label: string }[] = [
   { value: 'en', label: '英文' },
@@ -143,7 +143,7 @@ export default function Home() {
   }, [query]);
 
   useEffect(() => {
-    fetch('/kidstar/api/v1/tags')
+    fetch('/api/v1/tags')
       .then((response) => response.ok ? response.json() as Promise<{ items: Tag[] }> : Promise.reject(new Error('标签加载失败')))
       .then((data) => setTags(data.items))
       .catch(() => setTags([]));
@@ -155,7 +155,7 @@ export default function Home() {
     if (debouncedQuery) params.set('q', debouncedQuery);
     if (filter !== 'all' && filter !== 'favorites') params.set('tag', filter);
     if (filter === 'favorites' && favoriteQuery) params.set('ids', favoriteQuery);
-    return `/kidstar/api/v1/media?${params.toString()}`;
+    return `/api/v1/media?${params.toString()}`;
   }, [debouncedQuery, favoriteQuery, filter]);
 
   const fetchPage = useCallback(async (targetPage: number, version: number) => {
