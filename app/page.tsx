@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, type IconName } from './icons';
+import { getCurrentUser, logout, startLogin, type AuthUser } from '../lib/auth';
 
 type Tag = { slug: string; name: string; icon: string; count?: number };
 type MediaItem = {
@@ -119,6 +120,8 @@ export default function Home() {
   const [videoLyrics, setVideoLyrics] = useState<LyricLine[]>([]);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPseudoFullscreen, setIsPseudoFullscreen] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authReady, setAuthReady] = useState(false);
   const [fullscreenControlsVisible, setFullscreenControlsVisible] = useState(true);
   const [videoCountdown, setVideoCountdown] = useState<number | null>(null);
   const mediaRef = useRef<HTMLMediaElement | null>(null);
@@ -136,6 +139,8 @@ export default function Home() {
   const lyricLineRefs = useRef<Array<HTMLParagraphElement | null>>([]);
   const fullscreenControlsTimerRef = useRef<number | null>(null);
   const fullscreenActive = isFullscreen || isPseudoFullscreen;
+  useEffect(() => { void getCurrentUser().then(setUser).finally(() => setAuthReady(true)); }, []);
+  const requireLogin = useCallback(() => { if (user) return true; if (authReady) startLogin(); return false; }, [authReady, user]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedQuery(query.trim()), 320);
@@ -168,6 +173,7 @@ export default function Home() {
     if (version !== requestVersionRef.current) throw new DOMException('stale request', 'AbortError');
     return data;
   }, [buildListURL, favoriteQuery, filter]);
+  useEffect(() => { if (authReady && !user && (debouncedQuery || filter !== 'all')) startLogin(); }, [authReady, debouncedQuery, filter, user]);
 
   useEffect(() => {
     const version = ++requestVersionRef.current;
@@ -340,6 +346,7 @@ export default function Home() {
   }, []);
 
   const selectTrack = useCallback((item: MediaItem, shouldPlay: boolean, preferredKind: MediaKind = 'audio') => {
+    if (!requireLogin()) return;
     const nextKind = preferredKind === 'video' && item.hasVideo ? 'video' : item.hasAudio ? 'audio' : 'video';
     audioRef.current?.pause();
     videoRef.current?.pause();
@@ -364,7 +371,7 @@ export default function Home() {
       pendingPlayRef.current = false;
       if (shouldPlay) void element.play().catch(() => setPlaying(false));
     }
-  }, []);
+  }, [requireLogin]);
 
   const goNext = useCallback(async (fromEnded = false) => {
     if (!active || playableItems.length === 0) return;
@@ -546,6 +553,7 @@ export default function Home() {
   }, [goNext, videoCountdown]);
 
   const toggleFavorite = (id: number) => {
+    if (!requireLogin()) return;
     setFavoriteIds((current) => {
       const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
       localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
@@ -569,14 +577,15 @@ export default function Home() {
           <span className="brand-mark"><Icon name="star" /></span><span>童声星球</span>
         </button>
         <label className="search-box"><Icon name="search" /><span className="sr-only">搜索儿歌</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索中文名、英文名或编号" /></label>
-        <button className={`favorite-orb ${filter === 'favorites' ? 'active' : ''}`} type="button" aria-label="查看收藏" onClick={() => setFilter('favorites')}><Icon name="favorites" /></button>
+        {user ? <button className="favorite-orb" type="button" onClick={() => void logout()} title="退出登录">{user.display_name || user.username}</button> : <button className="favorite-orb" type="button" onClick={() => startLogin()} title="登录夜不洛">登录</button>}
+        <button className={`favorite-orb ${filter === 'favorites' ? 'active' : ''}`} type="button" aria-label="查看收藏" onClick={() => { if (requireLogin()) setFilter('favorites'); }}><Icon name="favorites" /></button>
       </header>
 
       <div className="workspace">
         <nav className="category-panel" aria-label="儿歌主题">
           <FilterButton active={filter === 'all'} icon="grid" label="全部" count={filter === 'all' ? total : undefined} onClick={() => setFilter('all')} />
-          <FilterButton active={filter === 'favorites'} icon="favorites" label="收藏" count={favoriteIds.length} onClick={() => setFilter('favorites')} />
-          {tags.map((tag) => <FilterButton key={tag.slug} active={filter === tag.slug} icon={tagIcons[tag.slug] ?? 'music'} label={tag.name} count={tag.count} onClick={() => setFilter(tag.slug)} />)}
+          <FilterButton active={filter === 'favorites'} icon="favorites" label="收藏" count={favoriteIds.length} onClick={() => { if (requireLogin()) setFilter('favorites'); }} />
+          {tags.map((tag) => <FilterButton key={tag.slug} active={filter === tag.slug} icon={tagIcons[tag.slug] ?? 'music'} label={tag.name} count={tag.count} onClick={() => { if (requireLogin()) setFilter(tag.slug); }} />)}
         </nav>
 
         <section className="library" aria-label="儿歌列表" ref={libraryRef}>
