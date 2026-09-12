@@ -4,7 +4,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon, type IconName } from './icons';
-import { getCurrentUser, logout, startLogin, type AuthUser } from '../lib/auth';
+import { getCurrentUser, startLogin, type AuthUser } from '../lib/auth';
+import { UserMenu } from './UserMenu';
 
 type Tag = { slug: string; name: string; icon: string; count?: number };
 type MediaItem = {
@@ -577,7 +578,7 @@ export default function Home() {
           <span className="brand-mark"><Icon name="star" /></span><span>童声星球</span>
         </button>
         <label className="search-box"><Icon name="search" /><span className="sr-only">搜索儿歌</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索中文名、英文名或编号" /></label>
-        {user ? <button className="favorite-orb" type="button" onClick={() => void logout()} title="退出登录">{user.display_name || user.username}</button> : <button className="favorite-orb" type="button" onClick={() => startLogin()} title="登录夜不洛">登录</button>}
+        <UserMenu user={user} />
         <button className={`favorite-orb ${filter === 'favorites' ? 'active' : ''}`} type="button" aria-label="查看收藏" onClick={() => { if (requireLogin()) setFilter('favorites'); }}><Icon name="favorites" /></button>
       </header>
 
