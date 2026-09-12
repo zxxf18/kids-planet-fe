@@ -35,12 +35,12 @@ export function UserMenu({ user }: { user: AuthUser | null }) {
 
   return <div className="user-menu" ref={root}>
     <button className="user-trigger" type="button" ref={trigger} aria-expanded={open} aria-controls={panelID} onClick={() => setOpen(!open)}>
-      <span className="user-name" title={name}>{name}</span><span aria-hidden="true">⌄</span>
+      <span className="user-name" title={name}>{name}</span>
+      <svg className="user-chevron" viewBox="0 0 20 20" width="16" height="16" fill="none" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
     </button>
     {open && <div className="user-panel" id={panelID}>
       <div className="user-panel-heading"><strong title={name}>{name}</strong><span title={user.email}>{user.email}</span></div>
-      <a href="https://sso.yebuluo.com.cn/account">用户资料 <span aria-hidden="true">↗</span></a>
-      <p className="user-profile-hint">在统一账户中心修改资料</p>
+      <a href="https://sso.yebuluo.com.cn/account">个人资料</a>
       <button type="button" onClick={() => void handleLogout()} disabled={busy}>{busy ? '正在退出…' : '退出登录'}</button>
       {error && <p className="user-menu-error" role="alert">{error}</p>}
     </div>}
