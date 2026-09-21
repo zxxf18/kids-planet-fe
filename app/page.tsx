@@ -17,6 +17,7 @@ type MediaItem = {
   hasVideo: boolean;
   hasLyrics: boolean;
   hasPoster: boolean;
+  publicPlayback: boolean;
   audioDurationMs?: number;
   videoDurationMs?: number;
   validationStatus: 'ready' | 'partial' | 'invalid';
@@ -174,8 +175,6 @@ export default function Home() {
     if (version !== requestVersionRef.current) throw new DOMException('stale request', 'AbortError');
     return data;
   }, [buildListURL, favoriteQuery, filter]);
-  useEffect(() => { if (authReady && !user && (debouncedQuery || filter !== 'all')) startLogin(); }, [authReady, debouncedQuery, filter, user]);
-
   useEffect(() => {
     const version = ++requestVersionRef.current;
     void (async () => {
@@ -347,7 +346,10 @@ export default function Home() {
   }, []);
 
   const selectTrack = useCallback((item: MediaItem, shouldPlay: boolean, preferredKind: MediaKind = 'audio') => {
-    if (!requireLogin()) return;
+    if (!item.publicPlayback && !user) {
+      if (authReady) startLogin();
+      return;
+    }
     const nextKind = preferredKind === 'video' && item.hasVideo ? 'video' : item.hasAudio ? 'audio' : 'video';
     audioRef.current?.pause();
     videoRef.current?.pause();
@@ -372,7 +374,7 @@ export default function Home() {
       pendingPlayRef.current = false;
       if (shouldPlay) void element.play().catch(() => setPlaying(false));
     }
-  }, [requireLogin]);
+  }, [authReady, user]);
 
   const goNext = useCallback(async (fromEnded = false) => {
     if (!active || playableItems.length === 0) return;
@@ -586,7 +588,7 @@ export default function Home() {
         <nav className="category-panel" aria-label="儿歌主题">
           <FilterButton active={filter === 'all'} icon="grid" label="全部" count={filter === 'all' ? total : undefined} onClick={() => setFilter('all')} />
           <FilterButton active={filter === 'favorites'} icon="favorites" label="收藏" count={favoriteIds.length} onClick={() => { if (requireLogin()) setFilter('favorites'); }} />
-          {tags.map((tag) => <FilterButton key={tag.slug} active={filter === tag.slug} icon={tagIcons[tag.slug] ?? 'music'} label={tag.name} count={tag.count} onClick={() => { if (requireLogin()) setFilter(tag.slug); }} />)}
+          {tags.map((tag) => <FilterButton key={tag.slug} active={filter === tag.slug} icon={tagIcons[tag.slug] ?? 'music'} label={tag.name} count={tag.count} onClick={() => setFilter(tag.slug)} />)}
         </nav>
 
         <section className="library" aria-label="儿歌列表" ref={libraryRef}>
