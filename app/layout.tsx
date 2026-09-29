@@ -22,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="zh-CN">
       <head>
+        <script defer src="https://yebuluo.com.cn/stats/tracker.js" data-site-id="kidstar" />
         {videoFrames.map((frame) => <link key={frame} rel="preload" href={`/video-frames/${frame}-v2.webp`} as="image" type="image/webp" />)}
       </head>
       <body>{children}</body>
